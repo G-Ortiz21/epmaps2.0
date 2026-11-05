@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["expo/types"],
+    "paths": {
+      "@firebase/auth": [
+        "./node_modules/@firebase/auth/dist/rn/index.rn.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.cjs",
+    "src/uniwind-types.d.ts"
+  ]
+}

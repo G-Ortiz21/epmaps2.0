@@ -1,0 +1,52 @@
+@import 'tailwindcss';
+@import 'uniwind';
+
+@theme {
+  --color-aqua-fondo: #EAF4F8;
+  --color-aqua-marino: #062B52;
+  --color-aqua-azul: #087FC4;
+  --color-aqua-turquesa: #65DCE5;
+  --color-aqua-texto: #173650;
+  --color-aqua-secundario: #688196;
+  --color-aqua-borde: #D5E5ED;
+  --color-aqua-error: #C0394B;
+  --color-aqua-error-fondo: #FFF0F1;
+  --color-aqua-error-borde: #F2CDD2;
+  --color-aqua-exito: #087F62;
+  --color-aqua-exito-fondo: #D9F7E9;
+  --color-aqua-exito-borde: #B5EBD3;
+  --color-aqua-aviso: #A96500;
+  --color-aqua-aviso-fondo: #FFF8E8;
+  --color-aqua-aviso-borde: #F2DDAA;
+  --color-aqua-suave: #DDF4FA;
+  --color-aqua-suave-alternativo: #E5F5FC;
+  --color-aqua-subtitulo: #D5EAF7;
+  --color-aqua-marca: #BDEBFA;
+  --color-aqua-pastilla: #DDF8FF;
+  --color-aqua-gota: #8DEBFF;
+
+  /* Tokens legados: se mantienen para pantallas que aún no se migran. */
+  --color-marca: #2C4482;
+  --color-marca-oscura: #1D2F60;
+  --color-marca-media: #355095;
+  --color-fondo: #F4F6FA;
+  --color-superficie: #FFFFFF;
+  --color-texto: #18233B;
+  --color-texto-secundario: #56627A;
+  --color-borde: #D7DEEA;
+  --color-superficie-suave: #EAF0F8;
+  --color-blanco: #FFFFFF;
+  --color-acento-rojo: #A61826;
+  --color-acento-azul: #355095;
+  --color-acento-verde: #9CB938;
+  --color-acento-naranja: #D06C26;
+  --color-acento-violeta: #763383;
+  --color-acento-magenta: #B51969;
+  --color-acento-celeste: #4F89C8;
+  --color-exito: #237A52;
+  --color-advertencia: #946000;
+  --color-error: #B42332;
+  --color-informacion: #245DA8;
+  --color-sin-conexion: #5B6475;
+  --color-pendiente: #946000;
+}

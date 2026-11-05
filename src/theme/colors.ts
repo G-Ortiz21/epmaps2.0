@@ -1,0 +1,27 @@
+export const colors = {
+  marca: '#2C4482',
+  marcaOscura: '#1D2F60',
+  marcaMedia: '#355095',
+  fondo: '#F4F6FA',
+  superficie: '#FFFFFF',
+  texto: '#18233B',
+  textoSecundario: '#56627A',
+  borde: '#D7DEEA',
+  superficieSuave: '#EAF0F8',
+  blanco: '#FFFFFF',
+  acentoRojo: '#A61826',
+  acentoAzul: '#355095',
+  acentoVerde: '#9CB938',
+  acentoNaranja: '#D06C26',
+  acentoVioleta: '#763383',
+  acentoMagenta: '#B51969',
+  acentoCeleste: '#4F89C8',
+  exito: '#237A52',
+  advertencia: '#946000',
+  error: '#B42332',
+  informacion: '#245DA8',
+  sinConexion: '#5B6475',
+  pendiente: '#946000',
+} as const;
+
+export type ColorToken = keyof typeof colors;
