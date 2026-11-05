@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { RouteScreen } from '../../../components/RouteScreen';
+import { MapaUbicacion } from '../../../components/MapaUbicacion';
+import LottieStatus from '../../../components/animations/LottieStatus';
 import { useConexion } from '../../../contexts/ConexionContext';
 import { useRegistro } from '../../../contexts/RegistroContext';
 import { useSesion } from '../../../contexts/SesionContext';
@@ -10,6 +12,7 @@ import { calcularConsumo } from '../../../domain/consumo';
 import { crearPeriodoLocal } from '../../../domain/identidadLectura';
 import { determinarEstadoVerificacion } from '../../../domain/reglasLectura';
 import { validarRegistro } from '../../../domain/validaciones';
+import { validarUbicacion } from '../../../domain/ubicacion';
 import { useMedidorQuery } from '../../../hooks/useMedidorQuery';
 import { obtenerRutaFoto } from '../../../services/fotoService';
 import { guardarLecturaLocal, LecturaYaRegistradaError } from '../../../services/registroService';
@@ -64,9 +67,7 @@ export default function ResumenScreen() {
 if (guardada) {
   return (
     <View className={"shadow-[0px_4px_10px_rgba(6,43,82,0.06)] bg-blanco border-[#9ADBC5] rounded-[24px] border-[1px] gap-[12px] p-[16px] items-start"}>
-      <View className={"w-[54px] h-[54px] rounded-[18px] bg-[#E1F6ED] items-center justify-center"}>
-        <Text className={"text-[#087F62] text-[30px] font-[900]"}>✓</Text>
-      </View>
+      <LottieStatus />
 
       <Text className={"text-[20px] font-[800] leading-[26px] text-[#087F62]"}>
         ¡Lectura registrada!
@@ -137,6 +138,10 @@ if (guardada) {
 
     const errores = validarRegistro(estadoTecnico, datos);
     const camposFaltantes = Object.values(errores);
+
+    if (!validarUbicacion(datos.ubicacion)) {
+      camposFaltantes.push('Confirma una ubicación GPS o manual válida.');
+    }
 
     if (camposFaltantes.length > 0) {
       setFaltantes(camposFaltantes);
@@ -317,6 +322,30 @@ if (guardada) {
             }
           />
 
+          <Fila
+            etiqueta="UBICACIÓN"
+            valor={
+              validarUbicacion(datos.ubicacion)
+                ? `${datos.ubicacion.latitud.toFixed(6)}, ${datos.ubicacion.longitud.toFixed(6)}`
+                : 'No confirmada'
+            }
+          />
+
+          {validarUbicacion(datos.ubicacion) ? (
+            <>
+              <Fila
+                etiqueta="ORIGEN DE UBICACIÓN"
+                valor={datos.ubicacion.origenUbicacion === 'gps' ? 'GPS' : 'Selección manual'}
+              />
+              {datos.ubicacion.precisionGps !== null ? (
+                <Fila
+                  etiqueta="PRECISIÓN GPS"
+                  valor={`±${Math.round(datos.ubicacion.precisionGps)} m`}
+                />
+              ) : null}
+            </>
+          ) : null}
+
           <View className={"gap-[8px] bg-[#F5F9FC] p-[12px] rounded-[14px]"}>
             <Text className={"text-[12px] font-[700] leading-[16px] text-[#5A7185] tracking-[0.5px]"}>VERIFICACIÓN</Text>
 
@@ -341,6 +370,13 @@ if (guardada) {
           </View>
         )}
 
+        {validarUbicacion(datos.ubicacion) ? (
+          <View className="gap-2">
+            <Text className="text-[16px] font-bold text-texto">Punto de lectura</Text>
+            <MapaUbicacion ubicacion={datos.ubicacion} seleccionable={false} />
+          </View>
+        ) : null}
+
         {faltantes.length > 0 && (
           <View className={"bg-[#FFF8E9] border-[#F0C36D] rounded-[20px] border-[1px] gap-[8px] p-[16px]"} accessibilityRole="summary">
             <Text className={"text-[16px] font-[500] leading-[20px] text-[#A96500]"}>Falta completar</Text>
@@ -350,6 +386,15 @@ if (guardada) {
                 • {texto}
               </Text>
             ))}
+            {!validarUbicacion(datos.ubicacion) ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/registro/fotografia')}
+                className="min-h-[48px] items-center justify-center rounded-xl bg-advertencia px-4"
+              >
+                <Text className="text-sm font-bold text-blanco">Completar ubicación</Text>
+              </Pressable>
+            ) : null}
           </View>
         )}
 

@@ -7,7 +7,7 @@ interface Migration {
 
 // v1 maps MedidorCache.datos to JSON, LecturaLocal to its explicit reading
 // columns, and BorradorRegistro.datos to JSON with a separately stored route step.
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export const MIGRATIONS: readonly Migration[] = [
   {
@@ -90,6 +90,23 @@ export const MIGRATIONS: readonly Migration[] = [
         datos_json TEXT NOT NULL,
         actualizado_en TEXT NOT NULL
       );
+    `,
+  },
+  {
+    version: 2,
+    sql: `
+      ALTER TABLE lecturas
+        ADD COLUMN latitud REAL
+        CHECK (latitud IS NULL OR (latitud >= -90 AND latitud <= 90));
+      ALTER TABLE lecturas
+        ADD COLUMN longitud REAL
+        CHECK (longitud IS NULL OR (longitud >= -180 AND longitud <= 180));
+      ALTER TABLE lecturas
+        ADD COLUMN origen_ubicacion TEXT
+        CHECK (origen_ubicacion IS NULL OR origen_ubicacion IN ('gps', 'manual'));
+      ALTER TABLE lecturas
+        ADD COLUMN precision_gps REAL
+        CHECK (precision_gps IS NULL OR precision_gps >= 0);
     `,
   },
 ];

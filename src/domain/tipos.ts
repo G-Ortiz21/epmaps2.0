@@ -29,6 +29,15 @@ export const PASOS_REGISTRO = [
 
 export type PasoRegistro = (typeof PASOS_REGISTRO)[number];
 
+export type OrigenUbicacion = 'gps' | 'manual';
+
+export interface UbicacionLectura {
+  latitud: number;
+  longitud: number;
+  origenUbicacion: OrigenUbicacion;
+  precisionGps: number | null;
+}
+
 export interface DatosRegistroLectura {
   lectura?: number | string | null;
   lecturaAnterior?: number | null;
@@ -37,6 +46,7 @@ export interface DatosRegistroLectura {
   consumoAnomalo?: boolean | null;
   confirmacionAnomalia?: boolean;
   fotoNombre?: string | null;
+  ubicacion?: UbicacionLectura | null;
 }
 
 export type CampoErrorRegistro =
@@ -46,7 +56,8 @@ export type CampoErrorRegistro =
   | 'motivo'
   | 'descripcion'
   | 'confirmacionAnomalia'
-  | 'fotoNombre';
+  | 'fotoNombre'
+  | 'ubicacion';
 
 export type ErroresRegistro = Partial<Record<CampoErrorRegistro, string>>;
 
@@ -80,6 +91,7 @@ export interface LecturaLocal {
   motivo: string | null;
   descripcion: string | null;
   fotoNombre: string | null;
+  ubicacion: UbicacionLectura | null;
   verificacion: EstadoVerificacion;
   syncEstado: EstadoSincronizacion;
   tecnicoCodigo: string | null;
@@ -101,6 +113,7 @@ export interface CrearLecturaInput {
   motivo: string | null;
   descripcion: string | null;
   fotoNombre: string | null;
+  ubicacion: UbicacionLectura;
   verificacion: EstadoVerificacion;
   tecnicoCodigo: string | null;
 }
@@ -118,6 +131,7 @@ export type ActualizarLecturaPendienteInput = Partial<
     | 'motivo'
     | 'descripcion'
     | 'fotoNombre'
+    | 'ubicacion'
     | 'verificacion'
   >
 >;

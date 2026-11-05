@@ -10,7 +10,9 @@ import {
   type EstadoSincronizacion,
   type EstadoVerificacion,
   type LecturaLocal,
+  type UbicacionLectura,
 } from '../../domain/tipos';
+import { validarUbicacion } from '../../domain/ubicacion';
 
 interface LecturaRow {
   clave_unica: string;
@@ -27,6 +29,10 @@ interface LecturaRow {
   motivo: string | null;
   descripcion: string | null;
   foto_nombre: string | null;
+  latitud: number | null;
+  longitud: number | null;
+  origen_ubicacion: string | null;
+  precision_gps: number | null;
   verificacion: string;
   sync_estado: string;
   tecnico_codigo: string | null;
@@ -70,6 +76,10 @@ export async function crearLecturaLocal(
   input: CrearLecturaInput,
   fechaRegistro: Date = new Date(),
 ): Promise<LecturaLocal> {
+  if (!validarUbicacion(input.ubicacion)) {
+    throw new TypeError('La lectura requiere una ubicación válida.');
+  }
+
   const periodo = crearPeriodoLocal(fechaRegistro);
   const claveUnica = crearClaveUnica(input.medidorCodigo, periodo);
   const fechaIso = fechaRegistro.toISOString();
@@ -80,10 +90,11 @@ export async function crearLecturaLocal(
       `INSERT INTO lecturas (
          clave_unica, remote_id, medidor_codigo, periodo, estado_medidor,
          lectura, lectura_anterior, consumo, promedio_mensual, consumo_anomalo,
-         confirmacion_anomalia, motivo, descripcion, foto_nombre, verificacion,
+         confirmacion_anomalia, motivo, descripcion, foto_nombre, latitud,
+         longitud, origen_ubicacion, precision_gps, verificacion,
          sync_estado, tecnico_codigo, creado_en, actualizado_en
        )
-       VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)`,
+       VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)`,
       [
         claveUnica,
         input.medidorCodigo,
@@ -98,6 +109,10 @@ export async function crearLecturaLocal(
         input.motivo,
         input.descripcion,
         input.fotoNombre,
+        input.ubicacion.latitud,
+        input.ubicacion.longitud,
+        input.ubicacion.origenUbicacion,
+        input.ubicacion.precisionGps,
         input.verificacion,
         input.tecnicoCodigo,
         fechaIso,
@@ -206,6 +221,7 @@ export async function actualizarLecturaPendiente(
     ['motivo', 'motivo'],
     ['descripcion', 'descripcion'],
     ['fotoNombre', 'foto_nombre'],
+    ['ubicacion', 'ubicacion'],
     ['verificacion', 'verificacion'],
   ];
 
@@ -215,6 +231,20 @@ export async function actualizarLecturaPendiente(
   for (const [property, column] of columnas) {
     const value = cambios[property];
     if (value !== undefined) {
+      if (property === 'ubicacion' && value !== null && !validarUbicacion(value)) {
+        throw new TypeError('La ubicación de la lectura no es válida.');
+      }
+      if (property === 'ubicacion') {
+        const ubicacion = value as UbicacionLectura | null;
+        assignments.push('latitud = ?', 'longitud = ?', 'origen_ubicacion = ?', 'precision_gps = ?');
+        values.push(
+          ubicacion?.latitud ?? null,
+          ubicacion?.longitud ?? null,
+          ubicacion?.origenUbicacion ?? null,
+          ubicacion?.precisionGps ?? null,
+        );
+        continue;
+      }
       assignments.push(`${column} = ?`);
       values.push(convertirValorSql(value));
     }
@@ -319,6 +349,7 @@ function mapearLectura(row: LecturaRow): LecturaLocal {
     motivo: row.motivo,
     descripcion: row.descripcion,
     fotoNombre: row.foto_nombre,
+    ubicacion: mapearUbicacion(row),
     verificacion: validarEstadoVerificacion(row.verificacion, row.clave_unica),
     syncEstado: validarEstadoSincronizacion(row.sync_estado, row.clave_unica),
     tecnicoCodigo: row.tecnico_codigo,
@@ -327,6 +358,30 @@ function mapearLectura(row: LecturaRow): LecturaLocal {
     intentosSync: row.intentos_sync,
     ultimoError: row.ultimo_error,
   };
+}
+
+function mapearUbicacion(row: LecturaRow): UbicacionLectura | null {
+  if (
+    row.latitud === null &&
+    row.longitud === null &&
+    row.origen_ubicacion === null &&
+    row.precision_gps === null
+  ) {
+    return null;
+  }
+
+  const ubicacion = {
+    latitud: row.latitud,
+    longitud: row.longitud,
+    origenUbicacion: row.origen_ubicacion,
+    precisionGps: row.precision_gps,
+  };
+
+  if (!validarUbicacion(ubicacion)) {
+    throw new Error(`La lectura ${row.clave_unica} tiene una ubicación inválida.`);
+  }
+
+  return ubicacion;
 }
 
 function validarEstadoMedidor(

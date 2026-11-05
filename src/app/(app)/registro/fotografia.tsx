@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { MapaUbicacion } from '../../../components/MapaUbicacion';
+import LottieLocation, { type EstadoAnimacionUbicacion } from '../../../components/animations/LottieLocation';
 import { useRegistro } from '../../../contexts/RegistroContext';
+import type { UbicacionLectura } from '../../../domain/tipos';
 import { requiereFoto } from '../../../domain/reglasLectura';
+import { crearUbicacionManual, validarUbicacion } from '../../../domain/ubicacion';
 import {
   CamaraNoDisponibleError,
   capturarFoto,
@@ -11,6 +15,7 @@ import {
   PermisoCamaraDenegadoError,
   recuperarFotoPendiente,
 } from '../../../services/fotoService';
+import { capturarUbicacionGPS, ErrorUbicacion } from '../../../services/ubicacionService';
 
 export default function FotografiaScreen() {
   const { registro, cargandoBorrador, actualizarDatos, definirPaso } =
@@ -19,10 +24,102 @@ export default function FotografiaScreen() {
   const [tomandoFoto, setTomandoFoto] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [permisoDenegado, setPermisoDenegado] = useState(false);
+  const [ubicacionCandidata, setUbicacionCandidata] = useState<UbicacionLectura | null>(null);
+  const [modoManual, setModoManual] = useState(false);
+  const [capturandoGPS, setCapturandoGPS] = useState(false);
+  const [estadoUbicacion, setEstadoUbicacion] =
+    useState<EstadoAnimacionUbicacion>('buscando');
+  const [errorUbicacion, setErrorUbicacion] = useState<string | null>(null);
+  const [intentoGPS, setIntentoGPS] = useState(0);
+  const secuenciaGPSRef = useRef(0);
 
   const codigoMedidor = registro.codigoMedidor;
   const estado = registro.estadoMedidor;
   const datos = registro.datos;
+
+  const ubicacionConfirmada = validarUbicacion(datos.ubicacion)
+    ? datos.ubicacion
+    : null;
+
+  const capturarGPS = useCallback(async () => {
+    const secuencia = ++secuenciaGPSRef.current;
+    setCapturandoGPS(true);
+    setEstadoUbicacion('buscando');
+    setErrorUbicacion(null);
+    setUbicacionCandidata(null);
+    actualizarDatos({ ubicacion: null });
+
+    try {
+      const resultado = await capturarUbicacionGPS();
+      if (secuencia !== secuenciaGPSRef.current) return;
+      setUbicacionCandidata(resultado);
+      setEstadoUbicacion('gps');
+    } catch (error: unknown) {
+      if (secuencia !== secuenciaGPSRef.current) return;
+      setEstadoUbicacion('error');
+      setErrorUbicacion(
+        error instanceof ErrorUbicacion
+          ? error.message
+          : 'No se pudo obtener la ubicación GPS.',
+      );
+    } finally {
+      if (secuencia === secuenciaGPSRef.current) {
+        setCapturandoGPS(false);
+      }
+    }
+  }, [actualizarDatos]);
+
+  useEffect(() => {
+    if (
+      cargandoBorrador ||
+      codigoMedidor === null ||
+      modoManual ||
+      ubicacionConfirmada !== null
+    ) {
+      return;
+    }
+
+    void capturarGPS();
+  }, [
+    cargandoBorrador,
+    codigoMedidor,
+    intentoGPS,
+    modoManual,
+    ubicacionConfirmada,
+    capturarGPS,
+  ]);
+
+  function seleccionarManualmente(): void {
+    const puntoActual = ubicacionCandidata ?? ubicacionConfirmada;
+    setModoManual(true);
+    setEstadoUbicacion('manual');
+    setErrorUbicacion(null);
+    actualizarDatos({ ubicacion: null });
+    setUbicacionCandidata(
+      puntoActual === null
+        ? null
+        : crearUbicacionManual(puntoActual.latitud, puntoActual.longitud),
+    );
+  }
+
+  function confirmarUbicacion(): void {
+    if (!validarUbicacion(ubicacionCandidata)) {
+      setErrorUbicacion('Selecciona una ubicación válida antes de confirmarla.');
+      return;
+    }
+
+    actualizarDatos({ ubicacion: ubicacionCandidata });
+    setModoManual(false);
+    setEstadoUbicacion(ubicacionCandidata.origenUbicacion);
+    setErrorUbicacion(null);
+  }
+
+  function reintentarGPS(): void {
+    setModoManual(false);
+    setUbicacionCandidata(null);
+    actualizarDatos({ ubicacion: null });
+    setIntentoGPS((anterior) => anterior + 1);
+  }
 
   useEffect(() => {
     if (!cargandoBorrador) {
@@ -237,6 +334,107 @@ export default function FotografiaScreen() {
               ? 'Asegúrate de que la imagen permita identificar el estado del medidor.'
               : 'Puedes adjuntar una fotografía para respaldar la información registrada.'}
           </Text>
+        </View>
+
+        <View className="gap-4 rounded-[22px] border border-borde bg-superficie p-4">
+          <View className="gap-1">
+            <Text className="text-[18px] font-bold text-texto">UBICACIÓN DE LA LECTURA</Text>
+            <Text className="text-sm leading-5 text-texto-secundario">
+              Guarda el punto donde tomaste la lectura. Puedes usar GPS o elegirlo manualmente.
+            </Text>
+          </View>
+
+          {capturandoGPS ? (
+            <LottieLocation estado="buscando" />
+          ) : ubicacionConfirmada !== null ? (
+            <LottieLocation estado={ubicacionConfirmada.origenUbicacion} />
+          ) : ubicacionCandidata?.origenUbicacion === 'manual' ? (
+            <LottieLocation estado="manual" />
+          ) : errorUbicacion !== null ? (
+            <LottieLocation estado="error" />
+          ) : null}
+
+          {ubicacionConfirmada !== null ? (
+            <View className="gap-1 rounded-xl bg-fondo p-3">
+              <Text className="text-sm font-semibold text-texto">
+                Origen: {ubicacionConfirmada.origenUbicacion === 'gps' ? 'GPS' : 'Selección manual'}
+              </Text>
+              <Text className="text-xs text-texto-secundario">
+                {ubicacionConfirmada.latitud.toFixed(6)}, {ubicacionConfirmada.longitud.toFixed(6)}
+              </Text>
+              {ubicacionConfirmada.precisionGps !== null ? (
+                <Text className="text-xs text-texto-secundario">
+                  Precisión GPS: ±{Math.round(ubicacionConfirmada.precisionGps)} m
+                </Text>
+              ) : null}
+            </View>
+          ) : ubicacionCandidata !== null ? (
+            <View className="gap-1 rounded-xl bg-fondo p-3">
+              <Text className="text-sm font-semibold text-texto">
+                Punto {ubicacionCandidata.origenUbicacion === 'gps' ? 'GPS' : 'manual'} por confirmar
+              </Text>
+              <Text className="text-xs text-texto-secundario">
+                {ubicacionCandidata.latitud.toFixed(6)}, {ubicacionCandidata.longitud.toFixed(6)}
+              </Text>
+              {ubicacionCandidata.precisionGps !== null ? (
+                <Text className="text-xs text-texto-secundario">
+                  Precisión GPS: ±{Math.round(ubicacionCandidata.precisionGps)} m
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
+          {errorUbicacion !== null ? (
+            <Text accessibilityRole="alert" className="text-sm leading-5 text-error">
+              {errorUbicacion}
+            </Text>
+          ) : null}
+
+          <View className="flex-row flex-wrap gap-2">
+            <Pressable
+              accessibilityRole="button"
+              disabled={capturandoGPS}
+              onPress={reintentarGPS}
+              className="min-h-[48px] flex-1 items-center justify-center rounded-xl bg-marca px-3"
+            >
+              <Text className="text-center text-sm font-bold text-blanco">
+                {capturandoGPS ? 'Buscando ubicación…' : 'Obtener GPS'}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={seleccionarManualmente}
+              className="min-h-[48px] flex-1 items-center justify-center rounded-xl border border-borde bg-superficie px-3"
+            >
+              <Text className="text-center text-sm font-bold text-texto">
+                {modoManual ? 'Ajustar punto manual' : 'Seleccionar manualmente'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {(modoManual || ubicacionCandidata !== null || ubicacionConfirmada !== null) ? (
+            <MapaUbicacion
+              ubicacion={ubicacionCandidata ?? ubicacionConfirmada}
+              seleccionable={modoManual}
+              onSeleccionar={setUbicacionCandidata}
+            />
+          ) : null}
+
+          {ubicacionCandidata !== null ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={confirmarUbicacion}
+              className="min-h-[50px] items-center justify-center rounded-xl border border-exito bg-exito/10 px-4"
+            >
+              <Text className="text-sm font-bold text-exito">Confirmar ubicación</Text>
+            </Pressable>
+          ) : null}
+
+          {ubicacionConfirmada === null && ubicacionCandidata === null ? (
+            <Text className="text-xs leading-5 text-texto-secundario">
+              La lectura no podrá guardarse hasta confirmar una ubicación válida. El mapa base requiere conexión; puedes usar GPS sin Internet.
+            </Text>
+          ) : null}
         </View>
 
         <View className={"gap-[5px] mt-[2px]"}>

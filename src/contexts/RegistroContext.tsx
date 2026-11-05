@@ -66,7 +66,8 @@ function existeRegistroIniciado(
     borrador.datos.lectura != null ||
     borrador.datos.motivo != null ||
     borrador.datos.descripcion != null ||
-    borrador.datos.fotoNombre != null
+    borrador.datos.fotoNombre != null ||
+    borrador.datos.ubicacion != null
   );
 }
 

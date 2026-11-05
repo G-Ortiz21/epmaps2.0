@@ -22,3 +22,5 @@ Cada archivo registra una sola decisión. Un ADR aceptado no se edita: si cambia
 | [014](ADR-014-verificar-lectura-antes-de-enviar.md) | Verificar la lectura contra los datos de la oficina antes de enviarla | R4, R6, R7 | ninguna |
 | [015](ADR-015-cache-de-medidores-con-tanstack-query.md) | Persistir la caché de consultas de medidores con TanStack Query y AsyncStorage (reemplaza a 003 en esa caché) | R2, R3, R9 | `@tanstack/react-query`, `@tanstack/react-query-persist-client`, `@tanstack/query-async-storage-persister`, `@react-native-async-storage/async-storage` |
 | [016](ADR-016-firebase-auth-reemplaza-sesion-local.md) | Autenticar con Firebase Authentication (reemplaza a ADR-012) | A1–A10 | `firebase`, `@react-native-async-storage/async-storage` |
+| [017](ADR-017-geolocalizacion.md) | Captura puntual de ubicación por lectura | Geolocalización de lecturas | `expo-location`, `react-native-webview`, Leaflet |
+| [018](ADR-018-ubicacion-obligatoria-y-animaciones.md) | Persistir la ubicación por lectura y representar estados reales con Lottie | Geolocalización de lecturas | `leaflet`, `react-native-webview`, `lottie-react-native` |

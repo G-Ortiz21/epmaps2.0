@@ -8,6 +8,7 @@ import {
   type GuardarBorradorInput,
   type PasoRegistro,
 } from '../../domain/tipos';
+import { validarUbicacion } from '../../domain/ubicacion';
 
 interface BorradorRow {
   id: number;
@@ -135,7 +136,10 @@ function esDatosRegistroLectura(value: unknown): value is DatosRegistroLectura {
       typeof value.confirmacionAnomalia === 'boolean') &&
     (value.fotoNombre === undefined ||
       value.fotoNombre === null ||
-      typeof value.fotoNombre === 'string')
+      typeof value.fotoNombre === 'string') &&
+    (value.ubicacion === undefined ||
+      value.ubicacion === null ||
+      validarUbicacion(value.ubicacion))
   );
 }
 

@@ -6,6 +6,7 @@ import {
 
 import {
   buscarLecturaRemotaPorClave,
+  coincideUbicacionRemota,
   crearLecturaRemota,
 } from '../api/lecturasApi';
 
@@ -83,6 +84,12 @@ async function sincronizarUnaLectura(
   const existente = await buscarLecturaRemotaPorClave(
     lectura.claveUnica,
   );
+
+  if (existente !== null && !coincideUbicacionRemota(lectura, existente)) {
+    throw new Error(
+      `La lectura remota ${lectura.claveUnica} no coincide en ubicación con el registro local.`,
+    );
+  }
 
   const remota =
     existente ?? (await crearLecturaRemota(lectura));

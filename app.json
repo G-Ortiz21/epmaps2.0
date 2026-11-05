@@ -28,6 +28,12 @@
         {
           "cameraPermission": "Lectura Ágil usa la cámara para fotografiar el medidor como evidencia de la lectura."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Lectura Ágil usa tu ubicación mientras registras una lectura para asociarla al medidor."
+        }
       ]
     ],
     "extra": {

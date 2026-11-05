@@ -10,6 +10,7 @@ import {
 import { calcularConsumo } from '../domain/consumo';
 import { crearPeriodoLocal } from '../domain/identidadLectura';
 import { determinarEstadoVerificacion } from '../domain/reglasLectura';
+import { validarUbicacion } from '../domain/ubicacion';
 import type {
   BorradorRegistro,
   CrearLecturaInput,
@@ -69,6 +70,10 @@ export async function guardarLecturaLocal(
     );
   }
 
+  if (!validarUbicacion(params.datos.ubicacion)) {
+    throw new TypeError('Confirma una ubicación GPS o manual válida antes de guardar.');
+  }
+
   const fechaRegistro = params.fechaRegistro ?? new Date();
   const lectura = convertirLectura(params.datos.lectura);
   const lecturaAnterior = params.datos.lecturaAnterior ?? null;
@@ -85,6 +90,7 @@ export async function guardarLecturaLocal(
     motivo: params.datos.motivo ?? null,
     descripcion: params.datos.descripcion ?? null,
     fotoNombre: params.datos.fotoNombre ?? null,
+    ubicacion: params.datos.ubicacion,
     verificacion: determinarEstadoVerificacion({
       lectura,
       lecturaAnterior,

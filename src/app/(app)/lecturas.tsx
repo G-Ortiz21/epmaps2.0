@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
+import { MapaUbicacion } from '../../components/MapaUbicacion';
 import { obtenerTodasLasLecturas } from '../../data/repositories/lecturasRepository';
 import type { LecturaLocal } from '../../domain/tipos';
 const clasesDinamicas: Record<string, Record<string, string>> = {
@@ -467,6 +468,14 @@ function TarjetaLectura({ lectura }: { lectura: LecturaLocal }) {
   const tono = tonoEstado(lectura.syncEstado);
   const paleta = TONOS[tono];
   const requiereAccion = lectura.verificacion === 'requiere_accion';
+  const [mostrarMapa, setMostrarMapa] = useState(false);
+  const fechaRegistro = new Date(lectura.creadoEn);
+  const fechaLegible = Number.isNaN(fechaRegistro.getTime())
+    ? 'Fecha no disponible'
+    : new Intl.DateTimeFormat('es-EC', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(fechaRegistro);
 
   return (
     <View className={"shadow-[0px_7px_16px_rgba(10,69,106,0.09)] rounded-[24px] p-[12px] bg-[rgba(255,255,255,0.82)] border-[1px] border-blanco overflow-hidden"}>
@@ -481,6 +490,7 @@ function TarjetaLectura({ lectura }: { lectura: LecturaLocal }) {
         <View className={"flex-1 min-w-[0px]"}>
           <Text className={"text-[#0A355E] text-[15px] font-[800]"}>{lectura.medidorCodigo}</Text>
           <Text className={"text-[#587990] text-[11px] mt-[5px]"}>▦  Período: {lectura.periodo}</Text>
+          <Text className={"text-[#587990] text-[11px] mt-[3px]"}>Fecha: {fechaLegible}</Text>
         </View>
 
         <View
@@ -499,6 +509,37 @@ function TarjetaLectura({ lectura }: { lectura: LecturaLocal }) {
             {ESTADOS[lectura.syncEstado]}
           </Text>
         </View>
+      </View>
+
+      <View className="mt-3 gap-2 border-t border-borde pt-3">
+        {lectura.ubicacion === null ? (
+          <Text className="text-sm text-texto-secundario">Ubicación no registrada</Text>
+        ) : (
+          <>
+            <Text className="text-sm font-semibold text-texto">
+              Ubicación {lectura.ubicacion.origenUbicacion === 'gps' ? 'GPS' : 'manual'}
+            </Text>
+            <Text className="text-xs text-texto-secundario">
+              {lectura.ubicacion.latitud.toFixed(6)}, {lectura.ubicacion.longitud.toFixed(6)}
+              {lectura.ubicacion.precisionGps === null
+                ? ''
+                : ` · ±${Math.round(lectura.ubicacion.precisionGps)} m`}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: mostrarMapa }}
+              onPress={() => setMostrarMapa((anterior) => !anterior)}
+              className="min-h-[48px] self-start justify-center rounded-lg border border-borde bg-superficie px-3"
+            >
+              <Text className="text-sm font-semibold text-marca">
+                {mostrarMapa ? 'Ocultar mapa' : 'Ver ubicación en mapa'}
+              </Text>
+            </Pressable>
+            {mostrarMapa ? (
+              <MapaUbicacion ubicacion={lectura.ubicacion} seleccionable={false} />
+            ) : null}
+          </>
+        )}
       </View>
 
       <View className={"flex-row items-stretch pt-[12px] border-t-[1px] border-t-[#DCEBF1] gap-[4px]"}>
